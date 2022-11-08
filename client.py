@@ -11,9 +11,12 @@ async def client(message: str = None, user: str = "Anonymous"):
     writer.write(data_for_client)
     await writer.drain()
 
-    data = await reader.read(1024)
-    print(data.decode())
-    print(type(json.loads(data.decode())))
+    while True:
+        data = await reader.read(1024)
+        if not data:
+            break
+        message = json.loads(data.decode())
+        print(message)
 
     # message = )
     # print(message)
