@@ -16,7 +16,7 @@ with open("general_chat.json", 'r') as f:
     try:
         general_chat = json.load(f)
     except ValueError:
-        general_chat = dict()
+        general_chat = list()
 
 
 async def client_connected(reader: StreamReader, writer: StreamWriter):
@@ -33,9 +33,10 @@ async def client_connected(reader: StreamReader, writer: StreamWriter):
             writer.write(data_for_client)
             await writer.drain()
         elif not message.get('to_user'):
-            record = {str(uuid.uuid4()): {'user': message.get('user'), 'message': message.get('message')}}
-            general_chat.update(record)
-            data_for_client = json.dumps(record).encode()
+            rec = [str(uuid.uuid4()), message.get('user'), message.get('message')]
+            # record = {str(uuid.uuid4()): {'user': message.get('user'), 'message': message.get('message')}}
+            general_chat.append(rec)
+            data_for_client = json.dumps([].append(rec)).encode()
             writer.write(data_for_client)
             await writer.drain()
             with open("general_chat.json", 'w') as f:
@@ -43,14 +44,6 @@ async def client_connected(reader: StreamReader, writer: StreamWriter):
         else:
             # p2p
             pass
-
-        # with open("general_chat.json", 'w') as f:
-        #     json.dump(general_chat, f)
-        #
-        # data_for_client = json.dumps(general_chat).encode()
-        # writer.write(data_for_client)
-        # await writer.drain()
-
     writer.close()
 
 
