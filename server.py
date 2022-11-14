@@ -37,8 +37,16 @@ async def client_connected(reader: StreamReader, writer: StreamWriter):
             chat_ids = [key for key, values in chat_name if _user in values]
 
             if chat_ids:
+                with open("chats.json", 'r') as f:
+                    try:
+                        chats = json.load(f)
+                    except ValueError:
+                        chats = dict()
                 for id in chat_ids:
 
+            else:
+                pass
+                #  Тут действие когда новый клиент. Последние 20 сообщений
 
         # if _last_read_message and not _message:
         #     index_last_message = \
