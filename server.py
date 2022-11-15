@@ -4,22 +4,29 @@ import sys
 import uuid
 from asyncio import StreamReader, StreamWriter
 import logging
+from typing import TextIO
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 
 # logger.info('Incoming data: %s', message)
-
 GLOBAL_CHAT = str(uuid.uuid4())
 
-open("chats.json", 'w')
+
+with open("chats.json", 'w') as f:
+    _dict = dict()
+    _dict[GLOBAL_CHAT] = list()
+    json.dump(_dict, f)
+
 open("last_read_message.json", 'w')
 # open("chat_users.json", 'w')
+
 
 with open("chat_users.json", 'w') as f:
     _dict = {GLOBAL_CHAT: "global"}
     json.dump(_dict, f)
+
 
 async def client_connected(reader: StreamReader, writer: StreamWriter):
 
@@ -47,15 +54,33 @@ async def client_connected(reader: StreamReader, writer: StreamWriter):
                             chat = chats.get(chat_name)
                             index_last_message = [index for index, item in enumerate(chat) if item[0] == message_id][0]
                             unread_messages = chat[index_last_message+1:]
-                            if unread_messages:
-                                data_for_client = json.dumps(unread_messages).encode()
-                                writer.write(data_for_client)
-                                await writer.drain()
                     else:
-                        pass
+                        chat = chats.get(GLOBAL_CHAT)
+                        unread_messages = chat[-20:]
+
+                    data_for_client = json.dumps(unread_messages).encode()
+                    writer.write(data_for_client)
+                    await writer.drain()
 
                 except ValueError as e:
-                    pass
+                    empty_chat = [["", "Admin", "This chat is empty..."], ]
+                    data_for_client = json.dumps(empty_chat).encode()
+                    writer.write(data_for_client)
+                    await writer.drain()
+
+        else:
+            data = [str(uuid.uuid4()), _user, _message]
+            data_for_client = json.dumps([data, ]).encode()
+            writer.write(data_for_client)
+            await writer.drain()
+
+            with open("chats.json", 'r') as f:
+                chats = json.load(f)
+
+            chats.get(GLOBAL_CHAT).append(data)
+
+            with open("chats.json", 'w') as f:
+                json.dump(chats, f)
 
         writer.close()
 

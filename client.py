@@ -1,6 +1,13 @@
 import asyncio
 import json
 
+import logging
+import sys
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler(stream=sys.stdout))
+
 
 async def client(message: str = None, user: str = "Anonymous", renew: bool = False, to_user: str = None):
     reader, writer = await asyncio.open_connection(
@@ -12,16 +19,17 @@ async def client(message: str = None, user: str = "Anonymous", renew: bool = Fal
              'to_user': to_user}
     data_for_client = json.dumps(query).encode()
     writer.write(data_for_client)
+    data = await reader.read(9999)
     await writer.drain()
     writer.close()
     # await writer.wait_closed()
 
-    data = await reader.read(9999)
-    message = json.loads(data.decode())
-    print(message)
+    messages = json.loads(data.decode())
+    for _, _user, _message in messages:
+        logger.info('%s: %s', _user, _message)
 
 asyncio.run(client(user="Agent Smith", renew=True))
-# asyncio.run(client(message="Do you hear that, Mr. Anderson?", user="Agent Smith"))
+asyncio.run(client(user="Agent Smith", message="Do you hear that, Mr. Anderson?"))
 # asyncio.run(client(message="That is the sound of inevitability.", user="Agent Smith"))
 # asyncio.run(client(message="That is the sound of your death.", user="Agent Smith"))
 # asyncio.run(client(message="Goodbye, Mr. Anderson.", user="Agent Smith"))
