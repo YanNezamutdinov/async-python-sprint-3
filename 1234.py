@@ -4,14 +4,6 @@ open("last_read_message.json", 'w')
 open("chat_name.json", 'w')
 
 
-chats_2 = {
-    "chat_id_1": {
-        "users": None,
-        "messages": [
-            ["message_id", "user_name", "message_text"]
-        ]
-    }
-}
 
 chats = {
     "chat_id_1": [[
