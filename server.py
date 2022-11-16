@@ -4,27 +4,22 @@ import sys
 import uuid
 from asyncio import StreamReader, StreamWriter
 import logging
-from typing import TextIO
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 
-# logger.info('Incoming data: %s', message)
+
 GLOBAL_CHAT = str(uuid.uuid4())
 
 
 with open("chats.json", 'w') as f:
-    _dict = dict()
-    _dict[GLOBAL_CHAT] = list()
+    _dict = list()
     json.dump(_dict, f)
 
-open("last_read_message.json", 'w')
-# open("chat_users.json", 'w')
 
-
-with open("chat_users.json", 'w') as f:
-    _dict = {GLOBAL_CHAT: "global"}
+with open("last_read_message.json", 'w') as f:
+    _dict = dict()
     json.dump(_dict, f)
 
 
@@ -41,75 +36,59 @@ async def client_connected(reader: StreamReader, writer: StreamWriter):
         if _renew:
             with open("last_read_message.json", 'r') as f:
                 try:
-                    last_read_message = json.load(f)
-                    message_ids = [(chat_name, message_id) for chat_name, message_id in last_read_message.get(_user)]
-                except ValueError:
-                    message_ids = dict()
+                    last_read_messages = json.load(f)
+                    message_id = last_read_messages.get(_user)
+                except AttributeError:
+                    message_id = None
 
             with open("chats.json", 'r') as f:
+                # try:
+                chat = json.load(f)
+                if message_id:
+                    index_last_read_message = [index for index, val in enumerate(chat) if val[0] == message_id][0]
+                    unread_messages = chat[index_last_read_message+1:]
+                else:
+                    unread_messages = chat[-20:]
+
+                unread_messages = [item for item in unread_messages if not item[3] or item[3] == _user]
+
+                with open("last_read_message.json", 'r') as f:
+                    last_read_messages = json.load(f)
                 try:
-                    chats = json.load(f)
-                    if message_ids:
-                        for chat_name, message_id in message_ids:
-                            chat = chats.get(chat_name)
-                            index_last_message = [index for index, item in enumerate(chat) if item[0] == message_id][0]
-                            unread_messages = chat[index_last_message+1:]
-                    else:
-                        chat = chats.get(GLOBAL_CHAT)
-                        unread_messages = chat[-20:]
+                    last_read_messages.update({_user: unread_messages[-1][0]})
+                except IndexError:
+                    unread_messages = [["", "Admin", "No new messages", ""], ]
 
-                    data_for_client = json.dumps(unread_messages).encode()
-                    writer.write(data_for_client)
-                    await writer.drain()
+                with open("last_read_message.json", 'w') as f:
+                    json.dump(last_read_messages, f)
 
-                except ValueError as e:
-                    empty_chat = [["", "Admin", "This chat is empty..."], ]
-                    data_for_client = json.dumps(empty_chat).encode()
-                    writer.write(data_for_client)
-                    await writer.drain()
+                data_for_client = json.dumps(unread_messages).encode()
+                writer.write(data_for_client)
+                await writer.drain()
 
         else:
-            data = [str(uuid.uuid4()), _user, _message]
+            data = [str(uuid.uuid4()), _user, _message, _to_user]
             data_for_client = json.dumps([data, ]).encode()
             writer.write(data_for_client)
             await writer.drain()
 
             with open("chats.json", 'r') as f:
-                chats = json.load(f)
+                chat = json.load(f)
 
-            chats.get(GLOBAL_CHAT).append(data)
+            chat.append(data)
 
             with open("chats.json", 'w') as f:
-                json.dump(chats, f)
+                json.dump(chat, f)
+
+            with open("last_read_message.json", 'r') as f:
+                last_read_messages = json.load(f)
+
+            last_read_messages.update({_user: data[0]})
+
+            with open("last_read_message.json", 'w') as f:
+                json.dump(last_read_messages, f)
 
         writer.close()
-
-
-
-        # if _last_read_message and not _message:
-        #     index_last_message = \
-        #     [index for index, item in enumerate(general_chat) if item[0] == _last_read_message][0]
-        #     no_read_message = general_chat[index_last_message+1:]
-        #     data_for_client = json.dumps(no_read_message).encode()
-        #     writer.write(data_for_client)
-        #     await writer.drain()
-        #
-        # elif not _message:
-        #     data_for_client = json.dumps(general_chat[-20:]).encode()
-        #     writer.write(data_for_client)
-        #     await writer.drain()
-        #
-        # elif not message.get('to_user'):
-        #     rec = [str(uuid.uuid4()), _user, _message]
-        #     general_chat.append(rec)
-        #     data_for_client = json.dumps([rec,]).encode()
-        #     writer.write(data_for_client)
-        #     await writer.drain()
-        #     with open("general_chat.json", 'w') as f:
-        #         json.dump(general_chat, f)
-        # else:
-            # p2p
-            # pass
 
 
 async def server(host: str = "127.0.0.1", port: int = 8000):

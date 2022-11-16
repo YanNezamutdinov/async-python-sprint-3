@@ -22,29 +22,19 @@ async def client(message: str = None, user: str = "Anonymous", renew: bool = Fal
     data = await reader.read(9999)
     await writer.drain()
     writer.close()
-    # await writer.wait_closed()
+    await writer.wait_closed()
 
     messages = json.loads(data.decode())
-    for _, _user, _message in messages:
-        logger.info('%s: %s', _user, _message)
+    for _, _user, _message, _to_user in messages:
+        if _to_user:
+            logger.info('%s -> %s: %s', _user, _to_user, _message)
+        else:
+            logger.info('%s: %s', _user, _message)
 
 asyncio.run(client(user="Agent Smith", renew=True))
 asyncio.run(client(user="Agent Smith", message="Do you hear that, Mr. Anderson?"))
-# asyncio.run(client(message="That is the sound of inevitability.", user="Agent Smith"))
-# asyncio.run(client(message="That is the sound of your death.", user="Agent Smith"))
-# asyncio.run(client(message="Goodbye, Mr. Anderson.", user="Agent Smith"))
-# asyncio.run(client(user="Agent Smith"))
-# asyncio.run(client(user="Agent Smith"))
-# asyncio.run(client(user="Neo"))
-# asyncio.run(client(message="My name is Neo.", user="Neo"))
+asyncio.run(client(user="Agent Smith", message="That is the sound of inevitability."))
+asyncio.run(client(user="Agent Smith", message="That is the sound of your death."))
+asyncio.run(client(user="Agent Smith", message="Goodbye, Mr. Anderson."))
+asyncio.run(client(user="Agent Smith", message="pssss...", to_user="Neo"))
 
-
-
-
-
-# class Client:
-#     def __init__(self, server_host="127.0.0.1", server_port=8000):
-#         pass
-#
-#     def send(self, message=""):
-#         pass
