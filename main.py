@@ -1,3 +1,4 @@
+import json
 import logging
 import sys
 import asyncio
@@ -8,21 +9,50 @@ logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 
 
+async def get_last_message_id(user: str) -> str:
+    async with open("last_read_message.json", 'r') as f:
+        try:
+            last_read_messages = json.load(f)
+            message_id = last_read_messages.get(user)
+        except AttributeError:
+            message_id = None
+    return message_id
+
+
+async def post_last_message_id(user: str, uuid: str):
+    async with open("last_read_message.json", 'r') as f:
+        last_read_messages = json.load(f)
+    try:
+        last_read_messages.update({user: uuid})
+    except IndexError:
+        unread_messages = [["", "Admin", "No new messages", ""], ]
+        return unread_messages
+
+
+
+class Connected:
+    async def renew(self):
+        pass
+
+    async def receive_post(self):
+        pass
+
+
+
+
+
 async def client_connected(reader: StreamReader, writer: StreamWriter):
     address = writer.get_extra_info('peername')
     logger.info('Входящий от %s', address)
 
-    # while True:
-    #     data = await reader.read(1024)
-    #     # print(data)
-    #     if not data:
-    #         break
-    #     print(writer.get_extra_info())
-    #     writer.write(data)
-    #     await writer.drain()
-    #
-    # # logger.info('Stop serving %s', address)
-    # writer.close()
+    while True:
+        data = await reader.read(1024)
+        if not data:
+            break
+
+        message = json.loads(data.decode())
+        user, renew, message, to_user = message.values()
+
 
 
 async def main(host: str, port: int):

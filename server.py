@@ -50,6 +50,7 @@ async def client_connected(reader: StreamReader, writer: StreamWriter):
 
                 with open("last_read_message.json", 'r') as f:
                     last_read_messages = json.load(f)
+
                 try:
                     last_read_messages.update({_user: unread_messages[-1][0]})
                 except IndexError:
@@ -95,6 +96,7 @@ async def server(host: str = "127.0.0.1", port: int = 8000):
 
     async with srv:
         await srv.serve_forever()
+
 
 asyncio.run(server())
 
