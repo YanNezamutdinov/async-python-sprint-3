@@ -10,9 +10,6 @@ logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 
 
-GLOBAL_CHAT = str(uuid.uuid4())
-
-
 with open("chats.json", 'w') as f:
     _dict = list()
     json.dump(_dict, f)
@@ -42,7 +39,6 @@ async def client_connected(reader: StreamReader, writer: StreamWriter):
                     message_id = None
 
             with open("chats.json", 'r') as f:
-                # try:
                 chat = json.load(f)
                 if message_id:
                     index_last_read_message = [index for index, val in enumerate(chat) if val[0] == message_id][0]
@@ -94,6 +90,8 @@ async def client_connected(reader: StreamReader, writer: StreamWriter):
 async def server(host: str = "127.0.0.1", port: int = 8000):
     srv = await asyncio.start_server(
         client_connected, host, port)
+
+    logger.info('Сервер стартанул на %s', srv.sockets[0].getsockname())
 
     async with srv:
         await srv.serve_forever()
