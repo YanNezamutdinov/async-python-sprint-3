@@ -9,7 +9,7 @@ logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 
 
-async def get_conn(host, port):
+async def get_conn(host: str, port: int):
     reader, writer = await asyncio.open_connection(host, port)
 
     class Conn:

@@ -62,8 +62,8 @@ async def get_messages(user: str) -> list:
         return [["", "Admin", "No new messages", ""], ]
 
 
-async def post_message(user: str, message: str, to_user: str) -> list:
-    message = [str(uuid.uuid4()), user, message, to_user]
+async def post_message(user: str, user_data: str, to_user: str) -> list:
+    message = [str(uuid.uuid4()), user, user_data, to_user]
     async with aiofiles.open("chats.json", 'r') as f:
         contents = await f.read()
     chat = json.loads(contents)
@@ -83,8 +83,8 @@ class Connected:
         await writer.drain()
         writer.close()
 
-    async def receive_post(self, user: str, message: str, to_user: str, writer: StreamWriter):
-        message = await post_message(user, message, to_user)
+    async def receive_post(self, user: str, user_data: str|bytes, to_user: str, writer: StreamWriter):
+        message = await post_message(user, user_data, to_user)
         data_for_client = json.dumps([message, ]).encode()
         writer.write(data_for_client)
         await writer.drain()
@@ -99,13 +99,13 @@ async def client_connected(reader: StreamReader, writer: StreamWriter):
             break
 
         message = json.loads(data.decode())
-        user, renew, text, to_user = message.values()
+        user, renew, user_data, to_user = message.values()
         conn = Connected()
 
         if renew:
             await conn.renew(user, writer)
         else:
-            await conn.receive_post(user, text, to_user, writer)
+            await conn.receive_post(user, user_data, to_user, writer)
 
 
 async def main(host: str, port: int):
@@ -123,4 +123,3 @@ async def main(host: str, port: int):
 
 if __name__ == '__main__':
     asyncio.run(main('127.0.0.1', 8000))
-
