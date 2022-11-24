@@ -14,7 +14,11 @@ async def get_conn(host, port):
 
     class Conn:
 
-        async def send_data(self, message: str = None, user: str = "Anonymous", renew: bool = False, to_user: str = None):
+        async def send_data(self,
+                            user: str = "Anonymous",
+                            message: str = None,
+                            renew: bool = False,
+                            to_user: str = None):
             query = {'user': user,
                      'renew': renew,
                      'message': message,
