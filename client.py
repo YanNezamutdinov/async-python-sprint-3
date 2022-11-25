@@ -29,7 +29,7 @@ async def get_conn(host: str, port: int):
             await writer.drain()
 
             messages = json.loads(data.decode())
-            for _, user, message, to_user in messages:
+            for _, user, message, to_user, _ in messages:
                 if to_user:
                     logger.info('%s -> %s: %s', user, to_user, message)
                 else:

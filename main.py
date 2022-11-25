@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import sys
@@ -20,6 +21,13 @@ def files_init():
     with open("chats.json", 'w') as f:
         _dict = list()
         json.dump(_dict, f)
+
+
+def time_difference(time_cre: str) -> bool:
+    format = "%Y-%m-%d %H:%M:%S.%f"
+    dt_object = datetime.datetime.strptime(time_cre, format)
+
+    return dt_object < datetime.datetime.now() - datetime.timedelta(hours=1)
 
 
 async def get_last_message_id(user: str) -> str:
@@ -54,16 +62,17 @@ async def get_messages(user: str) -> list:
         else:
             unread_raw_messages = chat[-20:]
 
-        unread_messages = [item for item in unread_raw_messages if not item[3] or item[3] == user]
+        unread_messages = [item for item in unread_raw_messages
+                           if not item[3] or item[3] == user and time_difference(item[4])]
         await post_last_message_id(user, unread_messages[-1][0])
 
         return unread_messages
     except IndexError:
-        return [["", "Admin", "No new messages", ""], ]
+        return [["", "Admin", "No new messages", "", ""], ]
 
 
 async def post_message(user: str, user_data: str, to_user: str) -> list:
-    message = [str(uuid.uuid4()), user, user_data, to_user]
+    message = [str(uuid.uuid4()), user, user_data, to_user, datetime.datetime.now().__str__()]
     async with aiofiles.open("chats.json", 'r') as f:
         contents = await f.read()
     chat = json.loads(contents)
@@ -83,7 +92,7 @@ class Connected:
         await writer.drain()
         writer.close()
 
-    async def receive_post(self, user: str, user_data: str|bytes, to_user: str, writer: StreamWriter):
+    async def receive_post(self, user: str, user_data: str, to_user: str, writer: StreamWriter):
         message = await post_message(user, user_data, to_user)
         data_for_client = json.dumps([message, ]).encode()
         writer.write(data_for_client)
